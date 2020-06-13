@@ -19,7 +19,7 @@ namespace NeuralNetworkClasses
             CreateHiddenLayers();
             CreateOutputLayers();
         }
-        public Neuron FeedForward(List<double> inputSignals)
+        public Neuron FeedForward(params double[] inputSignals)
         {
             //TODO: chech data in method FeedForward for class NeuralNetwork (inputSignals.Count = Topology.InputCount).
             SendSignalsToInputNeurons(inputSignals);
@@ -34,7 +34,43 @@ namespace NeuralNetworkClasses
             }
 
         }
-
+        public double Learn(List<Tuple<double, double[]>> dataSet, int age)
+        {
+            var error = 0.0;
+            for (int i = 0; i < age; i++)
+            {
+                foreach (var data in dataSet)
+                {
+                    error += BackPropagation(data.Item1, data.Item2);
+                }
+            }
+            return error / age;
+        }
+        private double BackPropagation(double expected, params double[] inputs)
+        {
+            var actual = FeedForward(inputs).Output;
+            var difference = actual - expected;
+            foreach (var neuron in Layers.Last().Neurons)
+            {
+                neuron.Learn(difference, Topology.LearningRate);
+            }
+            for (int j = Layers.Count-2; j >=0 ; j--)
+            {
+                var layer = Layers[j];
+                var previousLayer = Layers[j + 1];
+                for (int i = 0; i < layer.NeuronCount; i++)
+                {
+                    var neuron = layer.Neurons[i];
+                    for (int k = 0; k < previousLayer.Neurons.Count; k++)
+                    {
+                        var previousNeuron = previousLayer.Neurons[k];
+                        var error = previousNeuron.Weights[i] * previousNeuron.Delta;
+                        neuron.Learn(error, Topology.LearningRate);
+                    }
+                }
+            }
+            return difference * difference;
+        }
         private void FeedForwardAllLayersAfeterInput()
         {
             for (int i = 1; i < Layers.Count; i++)
@@ -49,12 +85,12 @@ namespace NeuralNetworkClasses
             }
         }
 
-        private void SendSignalsToInputNeurons(List<double> inputSignals)
+        private void SendSignalsToInputNeurons(params double[] inputSignals)
         {
-            for (int i = 0; i < inputSignals.Count; i++)
+            for (int i = 0; i < inputSignals.Length; i++)
             {
                 var signal = new List<double>() { inputSignals[i] };
-                var neuron = Layers[0].Neurons[0];
+                var neuron = Layers[0].Neurons[i]; //Changed from Neurons[0]
                 neuron.FeedForward(signal);
             }
         }
@@ -77,7 +113,7 @@ namespace NeuralNetworkClasses
                 var lastLayer = Layers.Last();
                 for (int i = 0; i < Topology.HiddenLayers[j]; i++)
                 {
-                    hiddenNeurons.Add(new Neuron(lastLayer.Count));
+                    hiddenNeurons.Add(new Neuron(lastLayer.NeuronCount));
                 }
                 Layers.Add(new Layer(hiddenNeurons));
             }
@@ -89,7 +125,7 @@ namespace NeuralNetworkClasses
             var lastLayer = Layers.Last();
             for (int i = 0; i < Topology.OutputCount; i++)
             {
-                outputNeurons.Add(new Neuron(lastLayer.Count, NeuronType.Output));
+                outputNeurons.Add(new Neuron(lastLayer.NeuronCount, NeuronType.Output));
             }
             Layers.Add(new Layer(outputNeurons, NeuronType.Output));
         }
