@@ -17,4 +17,16 @@
     <ProjectReference Include="..\NeuralNetworkClasses\NeuralNetworkClasses.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="datasets_33180_43520_heart.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Images\Parasitized.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Images\Unparasitized.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

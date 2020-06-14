@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 
 namespace NeuralNetworkClasses
@@ -26,25 +27,97 @@ namespace NeuralNetworkClasses
             FeedForwardAllLayersAfeterInput();
             if (Topology.OutputCount == 1)
             {
-                return Layers.Last().Neurons[0];
+                var result = Layers.Last().Neurons[0];
+                return result;
             }
             else
             {
-                return Layers.Last().Neurons.OrderByDescending(n => n.Output).First();
+                var result = Layers.Last().Neurons.OrderByDescending(n => n.Output).First();
+                return result;
             }
 
         }
-        public double Learn(List<Tuple<double, double[]>> dataSet, int age)
+        public double Learn(double[] expected, double[,] inputs, int age)
         {
+            var signals = Normalization(inputs);
             var error = 0.0;
             for (int i = 0; i < age; i++)
             {
-                foreach (var data in dataSet)
+                for (int j = 0; j < expected.Length; j++)
                 {
-                    error += BackPropagation(data.Item1, data.Item2);
+                    var output = expected[j];
+                    var input = GetRow(signals, j);
+                    error += BackPropagation(output, input);
                 }
             }
-            return error / age;
+            var result = error / age;
+            return result;
+        }
+        public static double[] GetRow(double[,] matrix, int row)
+        {
+            var colomns = matrix.GetLength(1);
+            var array = new double[colomns];
+            for (int i = 0; i < colomns; i++)
+            {
+                array[i] = matrix[row, i];
+            }
+            return array;
+        }
+        private double[,] Scalling(double [,] inputs)
+        {
+            var result = new double[inputs.GetLength(0), inputs.GetLength(1)];
+            for (int column = 0; column < inputs.GetLength(1); column++)
+            {
+                var min = inputs[0, column];
+                var max = inputs[0, column];
+                for (int row = 1; row < inputs.GetLength(0); row++)
+                {
+                    var item = inputs[row, column];
+                    if (item< min)
+                    {
+                        min = item;
+                    }
+                    if (item>max)
+                    {
+                        max = item;
+                    }
+                }
+                var divider = max - min;
+                for (int row = 1; row < inputs.GetLength(0); row++)
+                {
+                    result[row, column] = (inputs[row, column] - min) / divider;
+                }
+            }
+            return result;
+        }
+        private double[,] Normalization(double[,] inputs)
+        {
+            var result = new double[inputs.GetLength(0), inputs.GetLength(1)];
+            for (int column = 0; column < inputs.GetLength(1); column++)
+            {
+                //Average
+                var sum = 0.0;
+                for (int row = 0; row < inputs.GetLength(0); row++)
+                {
+                    sum += inputs[row, column];
+                }
+                var average = sum / inputs.GetLength(0);
+
+                //Standart Square Error
+                var error = 0.0;
+                for (int row = 0; row < inputs.GetLength(0); row++)
+                {
+                    error += Math.Pow((inputs[row, column] - average), 2);
+                }
+                var standartError = Math.Sqrt(error / inputs.GetLength(0));
+
+                //Change inputs
+                for (int row = 0; row < inputs.GetLength(0); row++)
+                {
+                    result[row, column] = (inputs[row, column] - average) / standartError;
+                }
+            }
+            return result;
         }
         private double BackPropagation(double expected, params double[] inputs)
         {
@@ -69,7 +142,8 @@ namespace NeuralNetworkClasses
                     }
                 }
             }
-            return difference * difference;
+            var result = difference * difference;
+            return result;
         }
         private void FeedForwardAllLayersAfeterInput()
         {
